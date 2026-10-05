@@ -1,0 +1,209 @@
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+struct Property
+{
+    string name;
+    int cost;
+    string owner;
+    Property* next;
+};
+
+class CircularPropertyList {
+private:
+    Property* head;
+
+public:
+    CircularPropertyList() {
+        head = nullptr;
+    }
+
+    void addProperty(string name, int cost) {
+        Property* newProperty =
+            new Property{name, cost, "Unowned", nullptr};
+
+        if (head == nullptr) {
+            head = newProperty;
+            newProperty->next = head;
+        } else {
+            Property* current = head;
+
+            while (current->next != head) {
+                current = current->next;
+            }
+
+            current->next = newProperty;
+            newProperty->next = head;
+        }
+    }
+
+    Property* searchProperty(string name) {
+        if (head == nullptr) {
+            return nullptr;
+        }
+
+        Property* current = head;
+
+        do {
+            if (current->name == name) {
+                return current;
+            }
+
+            current = current->next;
+        } while (current != head);
+
+        return nullptr;
+    }
+
+    bool removeProperty(string name) {
+        if (head == nullptr) {
+            return false;
+        }
+
+        Property* current = head;
+        Property* previous = nullptr;
+
+        do {
+            if (current->name == name) {
+                break;
+            }
+
+            previous = current;
+            current = current->next;
+        } while (current != head);
+
+        if (current->name != name) {
+            return false;
+        }
+
+        if (current == head && current->next == head) {
+            delete current;
+            head = nullptr;
+        } else {
+            if (current == head) {
+                Property* last = head;
+
+                while (last->next != head) {
+                    last = last->next;
+                }
+
+                head = head->next;
+                last->next = head;
+            } else {
+                previous->next = current->next;
+            }
+
+            delete current;
+        }
+
+        return true;
+    }
+
+    void printProperties() {
+        if (head == nullptr) {
+            cout << "The board is empty.\n";
+            return;
+        }
+
+        Property* current = head;
+
+        do {
+            cout << current->name
+                 << " | Cost: $" << current->cost
+                 << " | Owner: " << current->owner << endl;
+
+            current = current->next;
+        } while (current != head);
+    }
+
+    Property* getFirstProperty() {
+        return head;
+    }
+};
+
+struct Player {
+    string name;
+    Property* position;
+};
+
+void movePlayer(Player& player, int spaces) {
+    for (int i = 0; i < spaces; i++) {
+        player.position = player.position->next;
+    }
+}
+
+int main() {
+    CircularPropertyList board;
+
+    board.addProperty("Tilted Towers", 450);
+    board.addProperty("Pleasant Park", 400);
+    board.addProperty("Shifty Shafts", 300);
+    board.addProperty("Salty Springs", 325);
+    board.addProperty("Lucky Landing", 350);
+    board.addProperty("Greasy Grove", 200);
+    board.addProperty("Lazy Links", 250);
+    board.addProperty("Retail Row", 275);
+    board.addProperty("Junk Junction", 100);
+    board.addProperty("Haunted Hills", 150);
+
+    cout << "Initial Board:\n";
+    board.printProperties();
+
+    cout << "\nSearching for Retail Row:\n";
+    Property* found = board.searchProperty("Retail Row");
+
+    if (found != nullptr) {
+        cout << "Found: " << found->name << endl;
+    } else {
+        cout << "Property not found.\n";
+    }
+
+    cout << "\nRemoving Junk Junction:\n";
+    if (board.removeProperty("Junk Junction")) {
+        cout << "Junk Junction was removed.\n";
+    }
+
+    board.addProperty("Junk Junction", 100);
+
+    Player player1{"Player 1", board.getFirstProperty()};
+    Player player2{"Player 2", board.getFirstProperty()};
+
+    int diceRolls[10] = {3, 5, 2, 6, 4, 1, 7, 3, 5, 2};
+
+    cout << "\nMonopoly Simulation:\n";
+
+    for (int turn = 0; turn < 10; turn++) {
+        Player& currentPlayer =
+            (turn % 2 == 0) ? player1 : player2;
+
+        int roll = diceRolls[turn];
+
+        movePlayer(currentPlayer, roll);
+
+        cout << "\nTurn " << turn + 1 << ": "
+             << currentPlayer.name
+             << " rolled " << roll
+             << " and landed on "
+             << currentPlayer.position->name << ".\n";
+
+        if (currentPlayer.position->owner == "Unowned") {
+            currentPlayer.position->owner = currentPlayer.name;
+
+            cout << currentPlayer.name
+                 << " bought "
+                 << currentPlayer.position->name
+                 << " for $"
+                 << currentPlayer.position->cost << ".\n";
+        } else {
+            cout << "This property is already owned by "
+                 << currentPlayer.position->owner << ".\n";
+        }
+    }
+
+    cout << "\nFinal Board:\n";
+    board.printProperties();
+
+    return 0;
+}
